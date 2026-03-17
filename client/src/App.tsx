@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Search from "./pages/Search";
 import DocumentGenerator from "./pages/DocumentGenerator";
+import FAQ from "./pages/FAQ";
 
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/auth"} component={Auth} />
       <Route path={"/search"} component={Search} />
       <Route path={"/documents"} component={DocumentGenerator} />
+      <Route path={"/faq"} component={FAQ} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

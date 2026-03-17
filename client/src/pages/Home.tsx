@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Users,
   BarChart3,
-  Lock
+  Lock,
+  HelpCircle
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -57,6 +58,10 @@ export default function Home() {
             </button>
             <button onClick={() => navigate('/documents')} className="hover:text-primary transition">
               {t('header.pricing')}
+            </button>
+            <button onClick={() => navigate('/faq')} className="hover:text-primary transition flex items-center gap-1">
+              <HelpCircle className="w-4 h-4" />
+              FAQ
             </button>
             <a href="#about" className="hover:text-primary transition">
               {t('header.about')}
