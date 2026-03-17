@@ -1,4 +1,3 @@
-import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
@@ -150,10 +149,38 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+// Build plugins array - exclude jsxLocPlugin from production
+function getPlugins(): Plugin[] {
+  const basePlugins: any[] = [
+    react(),
+    tailwindcss(),
+    vitePluginManusRuntime(),
+    vitePluginManusDebugCollector(),
+  ];
+
+  // Only add jsxLocPlugin in development
+  if (process.env.NODE_ENV === "development") {
+    // Use a wrapper plugin that will load jsxLocPlugin dynamically
+    basePlugins.push({
+      name: "jsx-loc-plugin-wrapper",
+      async configResolved(config: any) {
+        try {
+          const { jsxLocPlugin } = await import("@builder.io/vite-plugin-jsx-loc");
+          const actualPlugin = jsxLocPlugin();
+          // Copy all properties from actual plugin to this wrapper
+          Object.assign(this, actualPlugin);
+        } catch (e) {
+          console.warn("jsxLocPlugin not available");
+        }
+      },
+    });
+  }
+
+  return basePlugins.filter(Boolean);
+}
 
 export default defineConfig({
-  plugins,
+  plugins: getPlugins(),
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
