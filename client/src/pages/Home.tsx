@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { useLocation } from 'wouter'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/_core/hooks/useAuth'
 import { 
   Search, 
   FileText, 
@@ -28,6 +29,10 @@ import { useState } from 'react'
  */
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const [, navigate] = useLocation()
   const { language, setLanguage, t } = useLanguage()
   const { theme, toggleTheme } = useTheme()
@@ -58,6 +63,9 @@ export default function Home() {
             </button>
             <button onClick={() => navigate('/documents')} className="hover:text-primary transition">
               {t('header.pricing')}
+            </button>
+            <button onClick={() => navigate('/storage')} className="hover:text-primary transition">
+              Storage
             </button>
             <button onClick={() => navigate('/faq')} className="hover:text-primary transition flex items-center gap-1">
               <HelpCircle className="w-4 h-4" />

@@ -64,6 +64,7 @@ python -m uvicorn app.main:app --reload
 
 ## 📖 Документация
 
+- **[FILE_STORAGE_GUIDE.md](./FILE_STORAGE_GUIDE.md)** - Полное руководство по облачному хранилищу
 - **[BACKEND_SETUP.md](./BACKEND_SETUP.md)** - Полная настройка бэкенда
 - **[AI_MODELS_INTEGRATION.md](./AI_MODELS_INTEGRATION.md)** - Интеграция бесплатных AI моделей
 - **[ideas.md](./ideas.md)** - Дизайн-философия и концепции
@@ -156,6 +157,14 @@ export TOGETHER_MODEL=togethercomputer/llama-2-7b-chat
 ```
 
 ## 🎯 Основные возможности
+
+### 💾 File Storage (Облачное хранилище)
+- Загрузка документов (PDF, DOC, DOCX, TXT, JPG, PNG)
+- Сохранение сгенерированных документов
+- Управление документами (список, скачивание, удаление)
+- AWS S3 через Manus платформу
+- Максимальный размер файла: 50MB
+- Безопасное пользовательское разделение доступа
 
 ### 🔍 RAG-поиск по законодательству
 - Поиск в 50+ НПА РК (ГК, ТК, КоАП, ЗПП и т.д.)

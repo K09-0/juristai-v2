@@ -10,15 +10,17 @@ import Auth from "./pages/Auth";
 import Search from "./pages/Search";
 import DocumentGenerator from "./pages/DocumentGenerator";
 import FAQ from "./pages/FAQ";
-
+import Storage from "./pages/Storage";
 
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/auth"} component={Auth} />
       <Route path={"/search"} component={Search} />
       <Route path={"/documents"} component={DocumentGenerator} />
+      <Route path={"/storage"} component={Storage} />
       <Route path={"/faq"} component={FAQ} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
