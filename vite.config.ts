@@ -148,13 +148,19 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-// Build plugins array - exclude jsxLocPlugin from production
+// Build plugins array - only include essential plugins
 function getPlugins(): Plugin[] {
+  // In production, don't include any dev-specific plugins
+  // vitePluginManusRuntime() is safe for production
   const basePlugins: any[] = [
-    react(),
     vitePluginManusRuntime(),
-    vitePluginManusDebugCollector(),
   ];
+  
+  // Only add dev plugins in development
+  if (process.env.NODE_ENV !== "production") {
+    basePlugins.unshift(react());
+    basePlugins.push(vitePluginManusDebugCollector());
+  }
 
   // Only add dev-only plugins in development
   if (process.env.NODE_ENV === "development") {
