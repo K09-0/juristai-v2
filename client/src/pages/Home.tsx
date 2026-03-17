@@ -1,56 +1,94 @@
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Search, FileText, Mic, Scale, Shield, Zap, Moon, Sun, Menu, X } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { useLocation } from 'wouter'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { 
+  Search, 
+  FileText, 
+  Zap, 
+  Shield, 
+  Moon, 
+  Sun,
+  Globe,
+  ArrowRight,
+  CheckCircle2,
+  Users,
+  BarChart3,
+  Lock
+} from 'lucide-react'
+import { useState } from 'react'
 
 /**
- * JuristAI v2 - Главная страница
- * Минималистичный дизайн с поддержкой тёмной/светлой темы
- * 
- * Дизайн-философия:
- * - Максимальная ясность и функциональность
- * - Иерархия через пространство и размер
- * - Контрастная типография (Geist Sans + Inter)
- * - Профессиональный синий акцент (#0066cc светлая, #3b82f6 тёмная)
+ * Главная страница JuristAI v2
+ * Минималистичный дизайн с поддержкой тёмной/светлой темы и казахского языка
  */
 
 export default function Home() {
+  const [, navigate] = useLocation()
+  const { language, setLanguage, t } = useLanguage()
   const { theme, toggleTheme } = useTheme()
-  const [activeTab, setActiveTab] = useState('search')
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query)}`)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="container flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Scale className="w-6 h-6 text-primary-foreground" />
+      <header className="border-b border-border sticky top-0 z-50 bg-background/95 backdrop-blur">
+        <div className="container max-w-6xl flex items-center justify-between h-16">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
+              J
             </div>
-            <h1 className="text-xl font-bold">JuristAI</h1>
+            <span className="font-bold text-lg">JuristAI</span>
           </div>
 
-          {/* Navigation - Desktop */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition">
-              Возможности
-            </a>
-            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition">
-              Тарифы
-            </a>
-            <a href="#about" className="text-sm text-muted-foreground hover:text-foreground transition">
-              О проекте
+          <nav className="hidden md:flex items-center gap-6 text-sm">
+            <button onClick={() => navigate('/search')} className="hover:text-primary transition">
+              {t('header.features')}
+            </button>
+            <button onClick={() => navigate('/documents')} className="hover:text-primary transition">
+              {t('header.pricing')}
+            </button>
+            <a href="#about" className="hover:text-primary transition">
+              {t('header.about')}
             </a>
           </nav>
 
-          {/* Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="flex gap-1 bg-secondary rounded-lg p-1">
+              <button
+                onClick={() => setLanguage('ru')}
+                className={`px-3 py-1 rounded text-sm font-medium transition ${
+                  language === 'ru' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-background'
+                }`}
+              >
+                РУ
+              </button>
+              <button
+                onClick={() => setLanguage('kk')}
+                className={`px-3 py-1 rounded text-sm font-medium transition ${
+                  language === 'kk' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-background'
+                }`}
+              >
+                КК
+              </button>
+            </div>
+
+            {/* Theme Switcher */}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg hover:bg-secondary transition"
@@ -63,140 +101,47 @@ export default function Home() {
               )}
             </button>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-secondary transition"
-            >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            {/* Login Button */}
+            <Button onClick={() => navigate('/auth')} size="sm">
+              {t('auth.login')}
+            </Button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background">
-            <nav className="container flex flex-col gap-4 py-4">
-              <a href="#features" className="text-sm hover:text-primary transition">
-                Возможности
-              </a>
-              <a href="#pricing" className="text-sm hover:text-primary transition">
-                Тарифы
-              </a>
-              <a href="#about" className="text-sm hover:text-primary transition">
-                О проекте
-              </a>
-            </nav>
-          </div>
-        )}
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 -z-10">
-          <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663390821430/2S92VdbmpMwAvrwhPVSdfR/hero-legal-abstract-NuZYS3p2TdeioCUQUXUcKa.webp"
-            alt="Legal abstract background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-background/60 dark:bg-background/75" />
-        </div>
+      <section className="py-16 md:py-24 border-b border-border">
+        <div className="container max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <Badge className="mb-4" variant="secondary">
+                {t('hero.badge')}
+              </Badge>
+              
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                {t('hero.title')}
+              </h1>
+              
+              <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+                {t('hero.subtitle')}
+              </p>
 
-        <div className="container py-24 md:py-32">
-          <div className="max-w-3xl mx-auto text-center">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm text-muted-foreground">Работает с законодательством РК 2024</span>
+              <div className="flex gap-4">
+                <Button size="lg" onClick={() => navigate('/search')}>
+                  {t('hero.ask_button')}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/documents')}>
+                  {t('hero.create_button')}
+                </Button>
+              </div>
             </div>
 
-            {/* Main Heading */}
-            <h1 className="mb-6">
-              Юридический AI
-              <br />
-              <span className="text-primary">нового поколения</span>
-            </h1>
-
-            {/* Subheading */}
-            <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Мгновенные ответы из ГК, ТК, КоАП РК. Генерация документов. Анализ договоров с AI-разметкой рисков.
-            </p>
-
-            {/* Search Tabs */}
-            <div className="max-w-2xl mx-auto">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="search" className="flex items-center gap-2">
-                    <Search className="w-4 h-4" />
-                    <span className="hidden sm:inline">Поиск</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="doc" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    <span className="hidden sm:inline">Документ</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="audio" className="flex items-center gap-2">
-                    <Mic className="w-4 h-4" />
-                    <span className="hidden sm:inline">Аудио</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="search" className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Какие сроки исковой давности по договору подряда?"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button className="px-6">
-                      <Search className="w-4 h-4 mr-2" />
-                      Спросить
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="doc" className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Опишите ситуацию для генерации документа..."
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button className="px-6">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Создать
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="audio" className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      type="file"
-                      accept="audio/*"
-                      className="flex-1"
-                    />
-                    <Button className="px-6">
-                      <Mic className="w-4 h-4 mr-2" />
-                      Загрузить
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-
-              {/* Popular Tags */}
-              <div className="flex flex-wrap justify-center gap-2 mt-6">
-                <span className="text-sm text-muted-foreground">Популярное:</span>
-                {['Неустойка по 395 ГК', 'Увольнение по ТК', 'Регистрация ТОО'].map((tag) => (
-                  <button
-                    key={tag}
-                    className="px-3 py-1 text-sm rounded-full bg-secondary hover:bg-secondary/80 transition"
-                  >
-                    {tag}
-                  </button>
-                ))}
+            {/* Hero Image */}
+            <div className="relative h-96 rounded-lg overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+              <div className="text-center">
+                <FileText className="w-24 h-24 mx-auto text-primary/30 mb-4" />
+                <p className="text-muted-foreground">Законодательство РК 2026</p>
               </div>
             </div>
           </div>
@@ -204,218 +149,200 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="border-y border-border bg-secondary/30">
-        <div className="container py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: '10K+', label: 'Юристов' },
-              { value: '50K+', label: 'Документов' },
-              { value: '99%', label: 'Точность' },
-              { value: '24/7', label: 'Доступность' },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
+      <section className="py-12 bg-secondary/30">
+        <div className="container max-w-6xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-2">50+</div>
+              <p className="text-sm text-muted-foreground">{t('stats.lawyers')}</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-2">1000+</div>
+              <p className="text-sm text-muted-foreground">{t('stats.documents')}</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-2">99.8%</div>
+              <p className="text-sm text-muted-foreground">{t('stats.accuracy')}</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-2">24/7</div>
+              <p className="text-sm text-muted-foreground">{t('stats.availability')}</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24">
-        <div className="container">
-          <div className="text-center mb-16">
-            <h2>Возможности</h2>
-            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-              Всё необходимое для юридической работы в одном сервисе
-            </p>
+      <section className="py-16 md:py-24 border-b border-border">
+        <div className="container max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('features.title')}</h2>
+            <p className="text-lg text-muted-foreground">{t('features.subtitle')}</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              {
-                icon: Search,
-                title: 'RAG-поиск',
-                desc: 'Нейросеть ищет ответы в 50+ НПА РК',
-                free: true,
-              },
-              {
-                icon: FileText,
-                title: 'Генерация документов',
-                desc: 'Иски, претензии, договоры в 4 тонах',
-                free: true,
-              },
-              {
-                icon: Shield,
-                title: 'Анализ договоров',
-                desc: 'AI находит риски и предлагает правки',
-                premium: true,
-              },
-              {
-                icon: Mic,
-                title: 'Audio-to-Law',
-                desc: 'Транскрибация судебных заседаний',
-                premium: true,
-              },
-              {
-                icon: Zap,
-                title: 'Безлимит Premium',
-                desc: 'Неограниченные запросы 24/7',
-                premium: true,
-              },
-              {
-                icon: Shield,
-                title: 'Безопасность',
-                desc: 'Шифрование данных и локальное хранение',
-                free: true,
-              },
+              { icon: Search, title: t('features.rag_search'), desc: t('features.rag_desc') },
+              { icon: FileText, title: t('features.doc_generation'), desc: t('features.doc_desc') },
+              { icon: Zap, title: t('features.contract_analysis'), desc: t('features.contract_desc') },
+              { icon: Globe, title: t('features.audio_to_law'), desc: t('features.audio_desc') },
+              { icon: BarChart3, title: t('features.unlimited'), desc: t('features.unlimited_desc') },
+              { icon: Lock, title: t('features.security'), desc: t('features.security_desc') },
             ].map((feature, i) => (
-              <Card key={i} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary" />
-                </div>
+              <Card key={i} className="p-6 hover:shadow-lg transition">
+                <feature.icon className="w-8 h-8 text-primary mb-4" />
                 <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{feature.desc}</p>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      feature.free
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    }`}
-                  >
-                    {feature.free ? 'Бесплатно' : 'Premium'}
-                  </span>
-                </div>
+                <p className="text-sm text-muted-foreground">{feature.desc}</p>
               </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-secondary/30">
+      {/* Search Section */}
+      <section className="py-16 md:py-24 border-b border-border">
         <div className="container max-w-4xl">
-          <div className="text-center mb-16">
-            <h2>Тарифы</h2>
-            <p className="text-muted-foreground mt-4">
-              Начните бесплатно, обновитесь когда понадобится больше
-            </p>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-4">{t('search.title')}</h2>
+            <p className="text-muted-foreground">{t('hero.subtitle')}</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder={t('hero.search_placeholder')}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+            <Button type="submit" size="lg" className="px-8">
+              {t('hero.ask_button')}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>{t('hero.popular')} Статья 395 ГК РК, Исковая давность, Трудовой договор</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-16 md:py-24 border-b border-border">
+        <div className="container max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('pricing.title')}</h2>
+            <p className="text-lg text-muted-foreground">{t('pricing.subtitle')}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Free Plan */}
             <Card className="p-8">
-              <h3 className="text-xl font-semibold mb-4">Старт</h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold">0</span>
-                <span className="text-muted-foreground ml-2">₸/мес</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {[
-                  '10 запросов/день в законы',
-                  'Базовая генерация документов',
-                  'Email-поддержка',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                    {item}
-                  </li>
-                ))}
+              <h3 className="text-2xl font-bold mb-2">{t('pricing.start')}</h3>
+              <p className="text-3xl font-bold text-primary mb-6">
+                {language === 'ru' ? 'Бесплатно' : 'Тегін'}
+              </p>
+              <ul className="space-y-3 mb-6">
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.free_queries')}</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.basic_generation')}</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.email_support')}</span>
+                </li>
               </ul>
-              <Button variant="outline" className="w-full">
-                Начать бесплатно
+              <Button onClick={() => navigate('/auth')} className="w-full">
+                {t('pricing.start_free')}
               </Button>
             </Card>
 
             {/* Premium Plan */}
-            <Card className="p-8 border-primary bg-primary/5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Premium</h3>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary text-primary-foreground">
-                  POPULAR
-                </span>
-              </div>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-primary">5 000</span>
-                <span className="text-muted-foreground ml-2">₸/мес</span>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'Безлимит запросов в законы',
-                  'Расширенная генерация документов',
-                  'Анализ договоров с AI-разметкой',
-                  'Audio-to-Law транскрибация',
-                  'Приоритетная поддержка',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                    {item}
-                  </li>
-                ))}
+            <Card className="p-8 border-primary/50 bg-primary/5">
+              <Badge className="mb-4">{t('pricing.popular')}</Badge>
+              <h3 className="text-2xl font-bold mb-2">{t('pricing.premium')}</h3>
+              <p className="text-3xl font-bold text-primary mb-6">
+                {language === 'ru' ? '$9.99/мес' : '$9.99/ай'}
+              </p>
+              <ul className="space-y-3 mb-6">
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.unlimited_queries')}</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.advanced_generation')}</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.contract_analysis')}</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.audio_transcription')}</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>{t('pricing.priority_support')}</span>
+                </li>
               </ul>
-              <Button className="w-full">Выбрать Premium</Button>
+              <Button onClick={() => navigate('/auth')} className="w-full">
+                {t('pricing.choose_premium')}
+              </Button>
             </Card>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24">
-        <div className="container text-center">
-          <h2>Готовы начать?</h2>
-          <p className="text-muted-foreground mt-4 mb-8 max-w-2xl mx-auto">
-            Присоединяйтесь к тысячам юристов, которые уже используют JuristAI для ускорения своей работы.
-          </p>
-          <Button size="lg" className="px-8">
-            Начать бесплатно
+      <section className="py-16 md:py-24 border-b border-border bg-primary/5">
+        <div className="container max-w-4xl text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('cta.title')}</h2>
+          <p className="text-lg text-muted-foreground mb-8">{t('cta.subtitle')}</p>
+          <Button size="lg" onClick={() => navigate('/auth')}>
+            {t('auth.login')}
+            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-secondary/30 py-12">
-        <div className="container">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+      <footer className="border-t border-border py-12 bg-secondary/30">
+        <div className="container max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h4 className="font-semibold mb-4">JuristAI</h4>
-              <p className="text-sm text-muted-foreground">
-                Юридический AI-ассистент для Казахстана
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Продукт</h4>
+              <h4 className="font-semibold mb-4">{t('footer.product')}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Возможности</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Тарифы</a></li>
-                <li><a href="#" className="hover:text-foreground transition">API</a></li>
+                <li><button onClick={() => navigate('/search')} className="hover:text-primary transition">{t('header.features')}</button></li>
+                <li><button onClick={() => navigate('/documents')} className="hover:text-primary transition">{t('header.pricing')}</button></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Компания</h4>
+              <h4 className="font-semibold mb-4">{t('footer.company')}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">О нас</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Блог</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Контакты</a></li>
+                <li><a href="#about" className="hover:text-primary transition">{t('header.about')}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Правовое</h4>
+              <h4 className="font-semibold mb-4">{t('footer.legal')}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Политика</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Условия</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Cookies</a></li>
+                <li><a href="#privacy" className="hover:text-primary transition">{language === 'ru' ? 'Конфиденциальность' : 'Құпиялылық'}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Контакты</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="mailto:support@juristai.site" className="hover:text-primary transition">support@juristai.site</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
-            <p>&copy; 2024 JuristAI. Все права защищены.</p>
-            <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-foreground transition">Twitter</a>
-              <a href="#" className="hover:text-foreground transition">LinkedIn</a>
-              <a href="#" className="hover:text-foreground transition">GitHub</a>
-            </div>
+          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
+            <p>{t('footer.copyright')}</p>
           </div>
         </div>
       </footer>
