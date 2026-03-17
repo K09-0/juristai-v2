@@ -1,12 +1,14 @@
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Download, FileText, AlertCircle } from 'lucide-react'
+import { Download, FileText, AlertCircle, Loader2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { trpc } from '@/lib/trpc'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 /**
  * Страница генерации юридических документов
@@ -15,461 +17,270 @@ import { useLanguage } from '@/contexts/LanguageContext'
  */
 
 interface GeneratedDocument {
-  status: 'success' | 'error'
-  document_type: string
-  document_type_name: string
-  content: string
-  metadata?: {
-    generated_at: string
-    model: string
-  }
+  success: boolean
+  document?: {
+    id: number
+    title: string
+    type: string
+    fileUrl: string
+    format: string
+    fileSize: number
+    createdAt: Date
+  } | null
+  error?: string
 }
 
-const TONES = [
-  { value: 'formal', label: 'Формальный' },
-  { value: 'neutral', label: 'Нейтральный' },
-  { value: 'aggressive', label: 'Агрессивный' },
-  { value: 'protective', label: 'Защитный' }
+const DOCUMENT_TYPES = [
+  { value: 'исковое_заявление', label: 'Исковое заявление' },
+  { value: 'претензия', label: 'Претензия' },
+  { value: 'договор', label: 'Договор' },
+  { value: 'другое', label: 'Другое' }
+]
+
+const STYLES = [
+  { value: 'формальный', label: 'Формальный' },
+  { value: 'нейтральный', label: 'Нейтральный' },
+  { value: 'агрессивный', label: 'Агрессивный' },
+  { value: 'защитный', label: 'Защитный' }
+]
+
+const FORMATS = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'docx', label: 'DOCX' },
+  { value: 'txt', label: 'TXT' }
 ]
 
 export default function DocumentGenerator() {
-  const { t } = useLanguage()
-  const [activeTab, setActiveTab] = useState('claim')
-  const [loading, setLoading] = useState(false)
+  const { language } = useLanguage()
+  const [activeTab, setActiveTab] = useState('generate')
   const [generatedDoc, setGeneratedDoc] = useState<GeneratedDocument | null>(null)
   const [error, setError] = useState('')
 
-  // Claim form
-  const [claimData, setClaimData] = useState({
-    plaintiff: '',
-    defendant: '',
-    claim_amount: '',
-    claim_description: '',
-    tone: 'formal'
+  // Form state
+  const [formData, setFormData] = useState({
+    type: 'исковое_заявление',
+    title: '',
+    content: '',
+    style: 'формальный',
+    format: 'pdf',
+    language: language === 'kk' ? 'kk' : 'ru'
   })
 
-  // Complaint form
-  const [complaintData, setComplaintData] = useState({
-    complainant: '',
-    respondent: '',
-    complaint_subject: '',
-    complaint_description: '',
-    tone: 'formal'
+  // tRPC mutation
+  const generateMutation = trpc.documents.generate.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        setGeneratedDoc(data)
+        toast.success('Документ успешно создан!')
+        setError('')
+      } else {
+        setError(data.error || 'Ошибка при генерации документа')
+        toast.error(data.error || 'Ошибка при генерации документа')
+      }
+    },
+    onError: (error) => {
+      const errorMsg = error.message || 'Ошибка при генерации документа'
+      setError(errorMsg)
+      toast.error(errorMsg)
+    }
   })
 
-  // Contract form
-  const [contractData, setContractData] = useState({
-    party_a: '',
-    party_b: '',
-    contract_subject: '',
-    contract_terms: '',
-    contract_type: 'general',
-    tone: 'formal'
-  })
-
-  const handleGenerateClaim = async () => {
-    if (!claimData.plaintiff || !claimData.defendant || !claimData.claim_amount) {
+  const handleGenerate = async () => {
+    if (!formData.title || !formData.content) {
       setError('Пожалуйста, заполните все поля')
+      toast.error('Пожалуйста, заполните все поля')
       return
     }
 
-    setLoading(true)
     setError('')
     setGeneratedDoc(null)
 
-    try {
-      const response = await fetch('/api/documents/generate-claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(claimData)
-      })
-
-      if (!response.ok) throw new Error('Ошибка при генерации')
-
-      const data = await response.json()
-      setGeneratedDoc(data)
-    } catch (err) {
-      setError('Ошибка при генерации документа')
-    } finally {
-      setLoading(false)
-    }
+    generateMutation.mutate({
+      type: formData.type as any,
+      title: formData.title,
+      content: formData.content,
+      style: formData.style as any,
+      format: formData.format as any,
+      language: formData.language as any
+    })
   }
 
-  const handleGenerateComplaint = async () => {
-    if (!complaintData.complainant || !complaintData.respondent) {
-      setError('Пожалуйста, заполните все поля')
-      return
+  const handleDownload = () => {
+    if (generatedDoc?.document?.fileUrl) {
+      window.open(generatedDoc.document.fileUrl, '_blank')
     }
-
-    setLoading(true)
-    setError('')
-    setGeneratedDoc(null)
-
-    try {
-      const response = await fetch('/api/documents/generate-complaint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(complaintData)
-      })
-
-      if (!response.ok) throw new Error('Ошибка при генерации')
-
-      const data = await response.json()
-      setGeneratedDoc(data)
-    } catch (err) {
-      setError('Ошибка при генерации документа')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleGenerateContract = async () => {
-    if (!contractData.party_a || !contractData.party_b || !contractData.contract_subject) {
-      setError('Пожалуйста, заполните все поля')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    setGeneratedDoc(null)
-
-    try {
-      const response = await fetch('/api/documents/generate-contract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(contractData)
-      })
-
-      if (!response.ok) throw new Error('Ошибка при генерации')
-
-      const data = await response.json()
-      setGeneratedDoc(data)
-    } catch (err) {
-      setError('Ошибка при генерации документа')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleExport = (format: 'pdf' | 'docx') => {
-    if (!generatedDoc?.content) return
-
-    const link = document.createElement('a')
-    const file = new Blob([generatedDoc.content], { type: 'text/plain' })
-    link.href = URL.createObjectURL(file)
-    link.download = `document.${format === 'pdf' ? 'pdf' : 'docx'}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border bg-secondary/30 py-8">
-        <div className="container max-w-6xl">
-          <h1 className="text-3xl font-bold mb-2">{t('documents.title')}</h1>
-          <p className="text-muted-foreground">
-            Генерируйте юридические документы на основе законодательства РК
-          </p>
+      <div className="border-b border-border sticky top-0 z-40 bg-background/95 backdrop-blur">
+        <div className="container max-w-6xl h-16 flex items-center">
+          <div className="flex items-center gap-2">
+            <FileText className="w-6 h-6 text-primary" />
+            <h1 className="text-xl font-bold">
+              {language === 'kk' ? 'Құжат құрастырғыш' : 'Генератор документов'}
+            </h1>
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="container max-w-6xl py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form */}
-          <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="claim">{t('documents.claim')}</TabsTrigger>
-                <TabsTrigger value="complaint">{t('documents.complaint')}</TabsTrigger>
-                <TabsTrigger value="contract">{t('documents.contract')}</TabsTrigger>
-              </TabsList>
+      <div className="container max-w-4xl py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="generate">
+              {language === 'kk' ? 'Құжат құру' : 'Создать документ'}
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              {language === 'kk' ? 'Тарихы' : 'История'}
+            </TabsTrigger>
+          </TabsList>
 
-              {/* Claim */}
-              <TabsContent value="claim" className="space-y-4">
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-4">Исковое заявление</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Истец (ваше имя)</label>
-                      <Input
-                        placeholder="ФИО или название компании"
-                        value={claimData.plaintiff}
-                        onChange={(e) => setClaimData({...claimData, plaintiff: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Ответчик</label>
-                      <Input
-                        placeholder="ФИО или название компании"
-                        value={claimData.defendant}
-                        onChange={(e) => setClaimData({...claimData, defendant: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Сумма иска (тенге)</label>
-                      <Input
-                        type="number"
-                        placeholder="100000"
-                        value={claimData.claim_amount}
-                        onChange={(e) => setClaimData({...claimData, claim_amount: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Описание требований</label>
-                      <Textarea
-                        placeholder="Подробно опишите суть спора и ваши требования..."
-                        value={claimData.claim_description}
-                        onChange={(e) => setClaimData({...claimData, claim_description: e.target.value})}
-                        rows={4}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Стиль документа</label>
-                      <Select value={claimData.tone} onValueChange={(value) => setClaimData({...claimData, tone: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TONES.map(tone => (
-                            <SelectItem key={tone.value} value={tone.value}>
-                              {tone.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      onClick={handleGenerateClaim}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      {loading ? 'Генерация...' : 'Создать исковое заявление'}
-                    </Button>
-                  </div>
-                </Card>
-              </TabsContent>
-
-              {/* Complaint */}
-              <TabsContent value="complaint" className="space-y-4">
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-4">Претензия</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Истец (ваше имя)</label>
-                      <Input
-                        placeholder="ФИО или название компании"
-                        value={complaintData.complainant}
-                        onChange={(e) => setComplaintData({...complaintData, complainant: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Ответчик</label>
-                      <Input
-                        placeholder="ФИО или название компании"
-                        value={complaintData.respondent}
-                        onChange={(e) => setComplaintData({...complaintData, respondent: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Предмет претензии</label>
-                      <Input
-                        placeholder="Например: неисполнение договора поставки"
-                        value={complaintData.complaint_subject}
-                        onChange={(e) => setComplaintData({...complaintData, complaint_subject: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Описание нарушения</label>
-                      <Textarea
-                        placeholder="Подробно опишите нарушение и требуемые действия..."
-                        value={complaintData.complaint_description}
-                        onChange={(e) => setComplaintData({...complaintData, complaint_description: e.target.value})}
-                        rows={4}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Стиль документа</label>
-                      <Select value={complaintData.tone} onValueChange={(value) => setComplaintData({...complaintData, tone: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TONES.map(tone => (
-                            <SelectItem key={tone.value} value={tone.value}>
-                              {tone.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      onClick={handleGenerateComplaint}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      {loading ? 'Генерация...' : 'Создать претензию'}
-                    </Button>
-                  </div>
-                </Card>
-              </TabsContent>
-
-              {/* Contract */}
-              <TabsContent value="contract" className="space-y-4">
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-4">Договор</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Сторона А</label>
-                      <Input
-                        placeholder="ФИО или название компании"
-                        value={contractData.party_a}
-                        onChange={(e) => setContractData({...contractData, party_a: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Сторона Б</label>
-                      <Input
-                        placeholder="ФИО или название компании"
-                        value={contractData.party_b}
-                        onChange={(e) => setContractData({...contractData, party_b: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Предмет договора</label>
-                      <Input
-                        placeholder="Например: поставка товаров"
-                        value={contractData.contract_subject}
-                        onChange={(e) => setContractData({...contractData, contract_subject: e.target.value})}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Основные условия</label>
-                      <Textarea
-                        placeholder="Опишите основные условия договора (сроки, цена, обязанности и т.д.)..."
-                        value={contractData.contract_terms}
-                        onChange={(e) => setContractData({...contractData, contract_terms: e.target.value})}
-                        rows={4}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Тип договора</label>
-                      <Select value={contractData.contract_type} onValueChange={(value) => setContractData({...contractData, contract_type: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="general">Общий договор</SelectItem>
-                          <SelectItem value="supply">Договор поставки</SelectItem>
-                          <SelectItem value="service">Договор услуг</SelectItem>
-                          <SelectItem value="employment">Трудовой договор</SelectItem>
-                          <SelectItem value="lease">Договор аренды</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Стиль документа</label>
-                      <Select value={contractData.tone} onValueChange={(value) => setContractData({...contractData, tone: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TONES.map(tone => (
-                            <SelectItem key={tone.value} value={tone.value}>
-                              {tone.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      onClick={handleGenerateContract}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      {loading ? 'Генерация...' : 'Создать договор'}
-                    </Button>
-                  </div>
-                </Card>
-              </TabsContent>
-            </Tabs>
-
-            {/* Error */}
-            {error && (
-              <Card className="p-4 border-red-200 bg-red-50 text-red-700 mt-6">
-                <div className="flex gap-3">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <p>{error}</p>
-                </div>
-              </Card>
-            )}
-          </div>
-
-          {/* Preview */}
-          <div className="lg:col-span-1">
-            {generatedDoc && (
-              <Card className="p-6 sticky top-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold">{generatedDoc.document_type_name}</h3>
+          <TabsContent value="generate" className="space-y-6">
+            <Card className="p-6">
+              <div className="space-y-4">
+                {/* Document Type */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    {language === 'kk' ? 'Құжат түрі' : 'Тип документа'}
+                  </label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_TYPES.map(type => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="bg-secondary/50 rounded-lg p-4 mb-4 max-h-96 overflow-y-auto text-sm">
-                  <p className="whitespace-pre-wrap text-foreground">
-                    {generatedDoc.content.substring(0, 500)}...
-                  </p>
+                {/* Title */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    {language === 'kk' ? 'Құжат атауы' : 'Название документа'}
+                  </label>
+                  <Input
+                    placeholder={language === 'kk' ? 'Құжат атауын енгізіңіз' : 'Введите название документа'}
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => handleExport('pdf')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    {t('documents.export_pdf')}
-                  </Button>
-                  <Button
-                    onClick={() => handleExport('docx')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    {t('documents.export_docx')}
-                  </Button>
+                {/* Content */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    {language === 'kk' ? 'Құжат мазмұны' : 'Содержание документа'}
+                  </label>
+                  <Textarea
+                    placeholder={language === 'kk' ? 'Құжат деректерін енгізіңіз' : 'Введите данные для документа'}
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    rows={6}
+                  />
                 </div>
 
-                {generatedDoc.metadata && (
-                  <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
-                    <p>Модель: {generatedDoc.metadata.model}</p>
-                    <p>Создано: {new Date(generatedDoc.metadata.generated_at).toLocaleString('ru-RU')}</p>
+                {/* Style */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    {language === 'kk' ? 'Стилі' : 'Стиль'}
+                  </label>
+                  <Select value={formData.style} onValueChange={(value) => setFormData({ ...formData, style: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STYLES.map(style => (
+                        <SelectItem key={style.value} value={style.value}>
+                          {style.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Format */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    {language === 'kk' ? 'Формат' : 'Формат'}
+                  </label>
+                  <Select value={formData.format} onValueChange={(value) => setFormData({ ...formData, format: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FORMATS.map(format => (
+                        <SelectItem key={format.value} value={format.value}>
+                          {format.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="flex gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive">{error}</p>
                   </div>
                 )}
+
+                {/* Generate Button */}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generateMutation.isPending}
+                  className="w-full"
+                  size="lg"
+                >
+                  {generateMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {language === 'kk' ? 'Құрастырылуда...' : 'Создание...'}
+                    </>
+                  ) : (
+                    language === 'kk' ? 'Құжат құру' : 'Создать документ'
+                  )}
+                </Button>
+              </div>
+            </Card>
+
+            {/* Generated Document */}
+            {generatedDoc?.success && generatedDoc.document && (
+              <Card className="p-6 bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg">{generatedDoc.document.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(generatedDoc.document.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <Button onClick={handleDownload} variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      {language === 'kk' ? 'Жүктеу' : 'Скачать'}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {language === 'kk' ? 'Размер' : 'Размер'}: {(generatedDoc.document.fileSize / 1024).toFixed(2)} KB
+                  </p>
+                </div>
               </Card>
             )}
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card className="p-6">
+              <p className="text-muted-foreground text-center py-8">
+                {language === 'kk' ? 'Құжат тарихы бос' : 'История документов пуста'}
+              </p>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
