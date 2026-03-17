@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 
-# Install dependencies
+# Install all dependencies (including dev)
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copy source code
@@ -16,31 +16,33 @@ COPY . .
 # Build the application
 RUN pnpm build
 
-# Runtime stage
+# Runtime stage - minimal image
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm for production dependencies
 RUN npm install -g pnpm
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
-COPY patches ./patches
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Install ONLY production dependencies
+RUN pnpm install --prod --frozen-lockfile --no-optional
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 
+# Set production environment
+ENV NODE_ENV=production
+
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
 
 # Start the application
 CMD ["node", "dist/index.js"]
